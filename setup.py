@@ -1,9 +1,11 @@
 from setuptools import setup, find_packages
 
+
 # Utility function to read the requirements from the requirements.txt file.
 def parse_requirements(filename):
     with open(filename, "r") as f:
         return [line.strip() for line in f if line.strip() and not line.startswith("#")]
+
 
 setup(
     name="pfu",

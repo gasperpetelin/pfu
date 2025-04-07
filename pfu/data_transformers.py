@@ -21,15 +21,9 @@ def extract_inferred_meta_columns(lf):
     col_ids = [c for c in columns if c.startswith(f"{col_prefix_id}|")]
     col_targets = [c for c in columns if c.startswith(f"{col_prefix_target}|")]
     col_timestamps = [c for c in columns if c.startswith(f"{col_prefix_timestamp}|")]
-    col_past_covariates = [
-        c for c in columns if c.startswith(f"{col_prefix_past_covariate}|")
-    ]
-    col_future_covariates = [
-        c for c in columns if c.startswith(f"{col_prefix_future_covariate}|")
-    ]
-    col_static_covariates = [
-        c for c in columns if c.startswith(f"{col_prefix_static_covariate}|")
-    ]
+    col_past_covariates = [c for c in columns if c.startswith(f"{col_prefix_past_covariate}|")]
+    col_future_covariates = [c for c in columns if c.startswith(f"{col_prefix_future_covariate}|")]
+    col_static_covariates = [c for c in columns if c.startswith(f"{col_prefix_static_covariate}|")]
 
     # Assertions for required columns
     assert len(col_ids) == 1, "There must be exactly one ID column."
@@ -81,9 +75,7 @@ class Transformer(ABC):
     def transform(self, lf: pl.LazyFrame) -> pl.LazyFrame:
         self.infer_meta_columns_if_not_already_done(lf)
         assert isinstance(lf, pl.LazyFrame), "Input must be a polars LazyFrame."
-        assert (
-            self._is_fitted
-        ), f"Transformer {self.__class__.__name__} must be fitted before transforming."
+        assert self._is_fitted, f"Transformer {self.__class__.__name__} must be fitted before transforming."
 
         input_columns_len = len(lf.collect_schema().names())
         start_time = time.time()
@@ -100,10 +92,7 @@ class Transformer(ABC):
         return new_lf.lazy()
 
     def rename_target_prefixes_to_past_covariates(self, columns: List[str]):
-        return [
-            c.replace(f"{col_prefix_target}|", f"{col_prefix_past_covariate}|")
-            for c in columns
-        ]
+        return [c.replace(f"{col_prefix_target}|", f"{col_prefix_past_covariate}|") for c in columns]
 
     def _fit(self, lf: pl.LazyFrame) -> None:
         pass
@@ -179,30 +168,15 @@ class DateTimeFeatures(Transformer):
         tc = "|".join(tc.split("|")[1:])
         print(tc)
         return lf.with_columns(
-            pl.col(self.col_timestamp)
-            .dt.month()
-            .over(self.col_id)
-            .alias(f"{col_prefix_future_covariate}|{tc}|month"),
-            pl.col(self.col_timestamp)
-            .dt.day()
-            .over(self.col_id)
-            .alias(f"{col_prefix_future_covariate}|{tc}|day"),
-            pl.col(self.col_timestamp)
-            .dt.hour()
-            .over(self.col_id)
-            .alias(f"{col_prefix_future_covariate}|{tc}|hour"),
+            pl.col(self.col_timestamp).dt.month().over(self.col_id).alias(f"{col_prefix_future_covariate}|{tc}|month"),
+            pl.col(self.col_timestamp).dt.day().over(self.col_id).alias(f"{col_prefix_future_covariate}|{tc}|day"),
+            pl.col(self.col_timestamp).dt.hour().over(self.col_id).alias(f"{col_prefix_future_covariate}|{tc}|hour"),
             pl.col(self.col_timestamp)
             .dt.weekday()
             .over(self.col_id)
             .alias(f"{col_prefix_future_covariate}|{tc}|weekday"),
-            pl.col(self.col_timestamp)
-            .dt.week()
-            .over(self.col_id)
-            .alias(f"{col_prefix_future_covariate}|{tc}|week"),
-            pl.col(self.col_timestamp)
-            .dt.year()
-            .over(self.col_id)
-            .alias(f"{col_prefix_future_covariate}|{tc}|year"),
+            pl.col(self.col_timestamp).dt.week().over(self.col_id).alias(f"{col_prefix_future_covariate}|{tc}|week"),
+            pl.col(self.col_timestamp).dt.year().over(self.col_id).alias(f"{col_prefix_future_covariate}|{tc}|year"),
         )
 
 
@@ -216,12 +190,7 @@ class TargetRollingAverages(Transformer):
             c_alias = f"{self.col_target}|rolling_mean;window_size={ws}".replace(
                 f"{col_prefix_target}|", f"{col_prefix_past_covariate}|"
             )
-            lf = lf.with_columns(
-                pl.col(self.col_target)
-                .rolling_mean(window_size=ws)
-                .over(self.col_id)
-                .alias(c_alias)
-            )
+            lf = lf.with_columns(pl.col(self.col_target).rolling_mean(window_size=ws).over(self.col_id).alias(c_alias))
         return lf
 
     def get_params(self):
