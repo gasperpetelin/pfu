@@ -9,10 +9,10 @@ class ColumnSelector(ABC):
 
     def column_subset(self, columns: List[str]):
         return [c for c in columns if self.column_is_selected(c)]
-    
+
     @abstractmethod
     def get_params(self):
         pass
 
     def get_object(self):
-        return {'object': self.__class__.__name__, 'params': self.get_params()}
+        return {"object": self.__class__.__name__, "params": self.get_params()}
