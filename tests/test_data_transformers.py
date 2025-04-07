@@ -1,6 +1,6 @@
-from pfu.data_transformers import NothingTransformer
+import pytest
+from pfu.data_transformers import NothingTransformer, TargetRollingAverages
 
-
-def test_quantlab():
-    t = NothingTransformer()
+@pytest.mark.parametrize("transformer", [NothingTransformer(), TargetRollingAverages()])
+def test_transformers(transformer):
     assert 1 == 1
