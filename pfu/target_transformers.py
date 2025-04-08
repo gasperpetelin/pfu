@@ -14,7 +14,7 @@ class LogPCTargetTransformer(data_transformers.Transformer):
             (pl.col(self.col_target) + self.constant)
             .log()
             .alias(f"{self.col_target}{utils.col_delimiter}log;c={self.constant}")
-        )
+        ).drop(self.col_target)
         return lf
 
     def inverse_transform(self, lf: pl.LazyFrame) -> Union[pl.DataFrame, pl.LazyFrame]:
@@ -22,7 +22,7 @@ class LogPCTargetTransformer(data_transformers.Transformer):
             (pl.col(f"{self.col_target}{utils.col_delimiter}log;c={self.constant}").exp() - self.constant).alias(
                 self.col_target
             )
-        )
+        ).drop(f"{self.col_target}{utils.col_delimiter}log;c={self.constant}")
         return lf
 
     def get_params(self):
