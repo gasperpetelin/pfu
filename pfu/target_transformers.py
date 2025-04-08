@@ -24,3 +24,6 @@ class LogPCTargetTransformer(data_transformers.Transformer):
             )
         )
         return lf
+
+    def get_params(self):
+        return {"constant": self.constant}
