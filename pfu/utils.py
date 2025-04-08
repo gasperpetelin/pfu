@@ -14,7 +14,6 @@ col_delimiter = "|"
 def extract_inferred_meta_columns(lf):
     columns = lf.collect_schema().keys()
 
-    # Extract columns matching each prefix
     col_ids = [c for c in columns if c.startswith(f"{col_prefix_id}{col_delimiter}")]
     col_targets = [c for c in columns if c.startswith(f"{col_prefix_target}{col_delimiter}")]
     col_timestamps = [c for c in columns if c.startswith(f"{col_prefix_timestamp}{col_delimiter}")]
@@ -22,16 +21,13 @@ def extract_inferred_meta_columns(lf):
     col_future_covariates = [c for c in columns if c.startswith(f"{col_prefix_future_covariate}{col_delimiter}")]
     col_static_covariates = [c for c in columns if c.startswith(f"{col_prefix_static_covariate}{col_delimiter}")]
 
-    # Assertions for required columns
     assert len(col_ids) == 1, "There must be exactly one ID column."
     assert len(col_timestamps) == 1, "There must be exactly one timestamp column."
 
-    # Assign to variables for clarity
     col_id = col_ids[0]
     col_timestamp = col_timestamps[0]
     col_target = col_targets[0] if col_targets else None
 
-    # Return the result as a tuple
     return (
         col_id,
         col_timestamp,
@@ -94,7 +90,3 @@ def generate_synthetic_data(
 
     np.random.seed(None)
     return pl.concat(data).lazy()
-
-
-d = generate_synthetic_data()
-print(d.collect())

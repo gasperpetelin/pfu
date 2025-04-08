@@ -4,6 +4,7 @@ import time
 import polars as pl
 from typing import List, Union
 import pickle
+from pfu import utils
 
 
 class Transformer(ABC):
@@ -53,7 +54,7 @@ class Transformer(ABC):
         return new_lf.lazy()
 
     def rename_target_prefixes_to_past_covariates(self, columns: List[str]):
-        return [c.replace(f"{col_prefix_target}|", f"{col_prefix_past_covariate}|") for c in columns]
+        return [c.replace(f"{utils.col_prefix_target}|", f"{utils.col_prefix_past_covariate}|") for c in columns]
 
     def _fit(self, lf: pl.LazyFrame) -> None:
         pass
@@ -78,7 +79,7 @@ class Transformer(ABC):
                 self.col_past_covariates,
                 self.col_future_covariates,
                 self.col_static_covariates,
-            ) = extract_inferred_meta_columns(lf=lf)
+            ) = utils.extract_inferred_meta_columns(lf=lf)
             self._columns_inferred = True
 
     @abstractmethod
@@ -127,17 +128,31 @@ class DateTimeFeatures(Transformer):
     def _transform(self, lf: pl.LazyFrame) -> pl.LazyFrame:
         tc = self.col_timestamp
         tc = "|".join(tc.split("|")[1:])
-        print(tc)
         return lf.with_columns(
-            pl.col(self.col_timestamp).dt.month().over(self.col_id).alias(f"{col_prefix_future_covariate}|{tc}|month"),
-            pl.col(self.col_timestamp).dt.day().over(self.col_id).alias(f"{col_prefix_future_covariate}|{tc}|day"),
-            pl.col(self.col_timestamp).dt.hour().over(self.col_id).alias(f"{col_prefix_future_covariate}|{tc}|hour"),
+            pl.col(self.col_timestamp)
+            .dt.month()
+            .over(self.col_id)
+            .alias(f"{utils.col_prefix_future_covariate}|{tc}|month"),
+            pl.col(self.col_timestamp)
+            .dt.day()
+            .over(self.col_id)
+            .alias(f"{utils.col_prefix_future_covariate}|{tc}|day"),
+            pl.col(self.col_timestamp)
+            .dt.hour()
+            .over(self.col_id)
+            .alias(f"{utils.col_prefix_future_covariate}|{tc}|hour"),
             pl.col(self.col_timestamp)
             .dt.weekday()
             .over(self.col_id)
-            .alias(f"{col_prefix_future_covariate}|{tc}|weekday"),
-            pl.col(self.col_timestamp).dt.week().over(self.col_id).alias(f"{col_prefix_future_covariate}|{tc}|week"),
-            pl.col(self.col_timestamp).dt.year().over(self.col_id).alias(f"{col_prefix_future_covariate}|{tc}|year"),
+            .alias(f"{utils.col_prefix_future_covariate}|{tc}|weekday"),
+            pl.col(self.col_timestamp)
+            .dt.week()
+            .over(self.col_id)
+            .alias(f"{utils.col_prefix_future_covariate}|{tc}|week"),
+            pl.col(self.col_timestamp)
+            .dt.year()
+            .over(self.col_id)
+            .alias(f"{utils.col_prefix_future_covariate}|{tc}|year"),
         )
 
 
@@ -149,7 +164,7 @@ class TargetRollingAverages(Transformer):
     def _transform(self, lf: pl.LazyFrame) -> pl.LazyFrame:
         for ws in self.windows:
             c_alias = f"{self.col_target}|rolling_mean;window_size={ws}".replace(
-                f"{col_prefix_target}|", f"{col_prefix_past_covariate}|"
+                f"{utils.col_prefix_target}|", f"{utils.col_prefix_past_covariate}|"
             )
             lf = lf.with_columns(pl.col(self.col_target).rolling_mean(window_size=ws).over(self.col_id).alias(c_alias))
         return lf
