@@ -1,48 +1,9 @@
-col_prefix_id = "id"
-col_prefix_target = "target"
-col_prefix_timestamp = "timestamp"
-col_prefix_past_covariate = "covpast"
-col_prefix_future_covariate = "covfuture"
-col_prefix_static_covariate = "covstatic"
-col_prefix_prediction = "pred"
-
 from abc import ABC, abstractmethod
 import os
 import time
 import polars as pl
 from typing import List, Union
 import pickle
-
-
-def extract_inferred_meta_columns(lf):
-    columns = lf.collect_schema().keys()
-
-    # Extract columns matching each prefix
-    col_ids = [c for c in columns if c.startswith(f"{col_prefix_id}|")]
-    col_targets = [c for c in columns if c.startswith(f"{col_prefix_target}|")]
-    col_timestamps = [c for c in columns if c.startswith(f"{col_prefix_timestamp}|")]
-    col_past_covariates = [c for c in columns if c.startswith(f"{col_prefix_past_covariate}|")]
-    col_future_covariates = [c for c in columns if c.startswith(f"{col_prefix_future_covariate}|")]
-    col_static_covariates = [c for c in columns if c.startswith(f"{col_prefix_static_covariate}|")]
-
-    # Assertions for required columns
-    assert len(col_ids) == 1, "There must be exactly one ID column."
-    assert len(col_timestamps) == 1, "There must be exactly one timestamp column."
-
-    # Assign to variables for clarity
-    col_id = col_ids[0]
-    col_timestamp = col_timestamps[0]
-    col_target = col_targets[0] if col_targets else None
-
-    # Return the result as a tuple
-    return (
-        col_id,
-        col_timestamp,
-        col_target,
-        col_past_covariates,
-        col_future_covariates,
-        col_static_covariates,
-    )
 
 
 class Transformer(ABC):
@@ -195,3 +156,11 @@ class TargetRollingAverages(Transformer):
 
     def get_params(self):
         return {"windows": self.windows}
+
+
+class DropCovariatesTransformer(Transformer):
+    def _transform(self, lf: pl.LazyFrame) -> pl.LazyFrame:
+        return lf.select(self.meta_columns())
+
+    def get_params(self):
+        return {}
